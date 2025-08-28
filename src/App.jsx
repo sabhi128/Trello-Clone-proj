@@ -13,6 +13,7 @@ const App = () => {
       <List title="To Do" initialTasks={["Task 1", "Task 2"]} />
       <List title="In Progress" initialTasks={["Task 3"]} />
       <List title="Done" initialTasks={["Task 4", "Task 5"]} />
+
     </div>
   );
 };
