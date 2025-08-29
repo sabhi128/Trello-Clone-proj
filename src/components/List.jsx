@@ -5,33 +5,15 @@ const List = ({ title, initialTasks, onDelete }) => {
 
   const [tasks, setTasks] = useState(
     savedTasks.map((task) =>
-      typeof task === "string"
-        ? { text: task, label: "Medium", dueDate: "", isEditing: false }
-        : {
-          ...task,
-          label: task.label || "Medium",
-          dueDate: task.dueDate || "",
-          isEditing: false,
-        }
+      typeof task === "string" ? { text: task, isEditing: false } : { ...task, isEditing: false }
     )
   );
 
   const [newTask, setNewTask] = useState("");
-  const [newLabel, setNewLabel] = useState("Medium");
-  const [newDueDate, setNewDueDate] = useState("");
 
   // Save tasks to localStorage
   useEffect(() => {
-    localStorage.setItem(
-      title,
-      JSON.stringify(
-        tasks.map((t) => ({
-          text: t.text,
-          label: t.label,
-          dueDate: t.dueDate,
-        }))
-      )
-    );
+    localStorage.setItem(title, JSON.stringify(tasks.map((t) => ({ text: t.text }))));
   }, [tasks, title]);
 
   // Add new task
@@ -51,21 +33,7 @@ const List = ({ title, initialTasks, onDelete }) => {
     setTasks(tasks.map((t, i) => (i === index ? { ...t, isEditing: true } : t)));
   };
   const handleSaveTask = (index, newText) => {
-    setTasks(
-      tasks.map((t, i) =>
-        i === index ? { ...t, text: newText, isEditing: false } : t
-      )
-    );
-  };
-
-  // Change label
-  const handleLabelChange = (index, newLabel) => {
-    setTasks(tasks.map((t, i) => (i === index ? { ...t, label: newLabel } : t)));
-  };
-
-  // Change due date
-  const handleDueDateChange = (index, newDate) => {
-    setTasks(tasks.map((t, i) => (i === index ? { ...t, dueDate: newDate } : t)));
+    setTasks(tasks.map((t, i) => i === index ? { text: newText, isEditing: false } : t));
   };
 
   // Delete
@@ -77,7 +45,7 @@ const List = ({ title, initialTasks, onDelete }) => {
     }
   };
 
-  // Undo listener
+  // Listen for undo events
   useEffect(() => {
     const handleUndoEvent = (e) => {
       const deletedTask = e.detail;
@@ -91,8 +59,68 @@ const List = ({ title, initialTasks, onDelete }) => {
     return () => window.removeEventListener("undoTask", handleUndoEvent);
   }, [tasks, title]);
 
+  // --- DnD: when another list drops a task, remove it here if this was the source
+  useEffect(() => {
+    const handleTaskMoved = (e) => {
+      const data = e.detail;
+      if (!data || data.fromTitle !== title) return;
+
+      setTasks((prev) => {
+        // Prefer removing by index+text (safer). Fallback to first match by text.
+        if (
+          typeof data.index === "number" &&
+          data.index >= 0 &&
+          data.index < prev.length &&
+          prev[data.index]?.text === data.task?.text
+        ) {
+          return prev.filter((_, i) => i !== data.index);
+        }
+        const removeIdx = prev.findIndex((t) => t.text === data.task?.text);
+        if (removeIdx !== -1) {
+          return prev.filter((_, i) => i !== removeIdx);
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener("taskMoved", handleTaskMoved);
+    return () => window.removeEventListener("taskMoved", handleTaskMoved);
+  }, [title]);
+
+  // --- DnD: allow dropping into this list
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setIsOver(true);
+  };
+  const handleDragLeave = () => setIsOver(false);
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsOver(false);
+
+    let raw = e.dataTransfer.getData("text/plain");
+    if (!raw) return;
+
+    try {
+      const data = JSON.parse(raw);
+      if (!data?.task || !data?.fromTitle) return;
+
+      // If dropped back onto the same list, do nothing
+      if (data.fromTitle === title) return;
+
+      // Add to this list
+      setTasks((prev) => [...prev, { text: data.task.text, isEditing: false }]);
+
+      // Tell the source list to remove it
+      window.dispatchEvent(new CustomEvent("taskMoved", { detail: data }));
+    } catch {
+      // ignore invalid payloads
+    }
+  };
+
   return (
-    <div className="bg-white/90 rounded-xl shadow-lg p-4 w-[20rem] max-h-[500px] flex flex-col overflow-hidden transition duration-300 hover:scale-105 hover:shadow-2xl">
+    <div className="bg-white/90 rounded-xl shadow-lg p-4 w-72 max-h-[500px] flex flex-col transition duration-300 hover:scale-105 hover:shadow-2xl">
       <h2 className="text-xl font-bold mb-3 text-gray-800">{title}</h2>
 
       {/* Task list */}
@@ -100,78 +128,25 @@ const List = ({ title, initialTasks, onDelete }) => {
         {tasks.map((task, index) => (
           <li
             key={index}
-            className={`bg-gray-600 p-2 rounded-lg shadow-sm flex flex-col transition duration-200
+            className={`bg-gray-600 p-2 rounded-lg shadow-sm flex justify-between items-center transition duration-200
               ${task.isEditing ? "bg-gray-300" : ""}
-              ${tasks.some((t) => t.isEditing) && !task.isEditing ? "opacity-50" : ""
-              }`}
+              ${tasks.some((t) => t.isEditing) && !task.isEditing ? "opacity-50" : ""}`}
           >
-            {/* Priority dropdown */}
-            <div className="flex justify-between items-center">
-              {/* Priority dropdown (LEFT) */}
-              <select
-                value={task.label}
-                onChange={(e) => handleLabelChange(index, e.target.value)}
-                disabled={!task.isEditing}
-                className={`text-white text-xs border-none appearance-none focus:outline-none pr-6 w-fit
-      ${task.isEditing
-                    ? "bg-gray-700 cursor-pointer"
-                    : "bg-transparent cursor-default"
-                  }`}
-                style={{
-                  backgroundImage: "url('/dropdown.svg')",
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 6px center",
-                  backgroundSize: "12px 12px",
+            {task.isEditing ? (
+              <input
+                type="text"
+                value={task.text}
+                autoFocus
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => {
+                  const newText = e.target.value;
+                  setTasks(tasks.map((t, i) => i === index ? { ...t, text: newText } : t));
                 }}
-              >
-                <option className="bg-gray-800 text-white" value="High">
-                  Priority: High
-                </option>
-                <option className="bg-gray-800 text-white" value="Medium">
-                  Priority: Medium
-                </option>
-                <option className="bg-gray-800 text-white" value="Low">
-                  Priority: Low
-                </option>
-              </select>
-
-              {/* Due Date (RIGHT) */}
-              {task.isEditing ? (
-                <input
-                  type="date"
-                  value={task.dueDate}
-                  onChange={(e) => handleDueDateChange(index, e.target.value)}
-                  className="text-xs p-1 rounded border border-gray-300"
-                />
-              ) : (
-                <span className="text-xs text-gray-200">
-                  {task.dueDate || "No date"}
-                </span>
-              )}
-            </div>
-
-
-            {/* Task text + due date + edit/delete */}
-            <div className="flex justify-between items-center mt-1">
-              {task.isEditing ? (
-                <input
-                  type="text"
-                  value={task.text}
-                  autoFocus
-                  onFocus={(e) => e.target.select()}
-                  onChange={(e) => {
-                    const newText = e.target.value;
-                    setTasks(
-                      tasks.map((t, i) =>
-                        i === index ? { ...t, text: newText } : t
-                      )
-                    );
-                  }}
-                  className="flex-1 p-1 rounded-md text-black border border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                />
-              ) : (
-                <span>{task.text}</span>
-              )}
+                className="flex-1 p-1 rounded-md text-black border border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400"
+              />
+            ) : (
+              <span>{task.text}</span>
+            )}
 
               {/* Due Date */}
               <div className="flex items-center gap-2 ml-2">
@@ -189,13 +164,13 @@ const List = ({ title, initialTasks, onDelete }) => {
                   }
                 />
 
-                <img
-                  src="/delete.png"
-                  alt="Delete"
-                  className="w-5 h-5 cursor-pointer filter invert-0 hover:invert transition"
-                  onClick={() => handleDeleteTask(index)}
-                />
-              </div>
+              <img
+                src="/delete.png"
+                alt="Delete"
+                className="w-5 h-5 cursor-pointer filter invert-0 hover:invert transition"
+                onClick={() => handleDeleteTask(index)}
+              />
+
             </div>
           </li>
         ))}
