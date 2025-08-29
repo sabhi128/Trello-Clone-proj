@@ -1,6 +1,7 @@
+// List.jsx
 import React, { useState, useEffect } from "react";
 
-const List = ({ title, initialTasks }) => {
+const List = ({ title, initialTasks, onDelete }) => {
   const savedTasks = JSON.parse(localStorage.getItem(title)) || initialTasks;
 
   const [tasks, setTasks] = useState(
@@ -9,8 +10,6 @@ const List = ({ title, initialTasks }) => {
     )
   );
   const [newTask, setNewTask] = useState("");
-  const [deletedTask, setDeletedTask] = useState(null); // for undo
-  const [showUndo, setShowUndo] = useState(false);
 
   // Save tasks to localStorage
   useEffect(() => {
@@ -32,26 +31,28 @@ const List = ({ title, initialTasks }) => {
     setTasks(tasks.map((t, i) => i === index ? { text: newText, isEditing: false } : t));
   };
 
-  // Delete with undo
+  // Delete
   const handleDeleteTask = (index) => {
     const taskToDelete = tasks[index];
-    setDeletedTask({ task: taskToDelete, index });
     setTasks(tasks.filter((_, i) => i !== index));
-    setShowUndo(true);
-
-    // Hide undo after 5 seconds
-    setTimeout(() => setShowUndo(false), 5000);
-  };
-
-  const handleUndo = () => {
-    if (deletedTask) {
-      const newTasks = [...tasks];
-      newTasks.splice(deletedTask.index, 0, deletedTask.task);
-      setTasks(newTasks);
-      setDeletedTask(null);
-      setShowUndo(false);
+    if (onDelete) {
+      onDelete({ task: taskToDelete, index, listTitle: title });
     }
   };
+
+  // Listen for undo events
+  useEffect(() => {
+    const handleUndoEvent = (e) => {
+      const deletedTask = e.detail;
+      if (deletedTask.listTitle === title) {
+        const newTasks = [...tasks];
+        newTasks.splice(deletedTask.index, 0, deletedTask.task);
+        setTasks(newTasks);
+      }
+    };
+    window.addEventListener("undoTask", handleUndoEvent);
+    return () => window.removeEventListener("undoTask", handleUndoEvent);
+  }, [tasks, title]);
 
   return (
     <div className="bg-white/90 rounded-xl shadow-lg p-4 w-72 max-h-[500px] flex flex-col transition duration-300 hover:scale-105 hover:shadow-2xl">
@@ -82,19 +83,23 @@ const List = ({ title, initialTasks }) => {
             )}
 
             <div className="flex gap-1">
-              <button
-                onClick={() => task.isEditing ? handleSaveTask(index, task.text) : handleEditTask(index)}
-                className="w-8 h-8 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-white font-bold"
-              >
-                {task.isEditing ? "s" : "e"}
-              </button>
+              {/* Edit / Save */}
+              <img
+                src={task.isEditing ? "/tick.png" : "/edit.png"}
+                alt={task.isEditing ? "Save" : "Edit"}
+                className="w-5 h-5 cursor-pointer filter invert-0 hover:invert transition"
+                onClick={() =>
+                  task.isEditing ? handleSaveTask(index, task.text) : handleEditTask(index)
+                }
+              />
 
-              <button
+              <img
+                src="/delete.png"
+                alt="Delete"
+                className="w-5 h-5 cursor-pointer filter invert-0 hover:invert transition"
                 onClick={() => handleDeleteTask(index)}
-                className="w-8 h-8 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-white font-bold"
-              >
-                d
-              </button>
+              />
+
             </div>
           </li>
         ))}
@@ -115,19 +120,6 @@ const List = ({ title, initialTasks }) => {
           +
         </button>
       </div>
-
-      {showUndo && (
-  <div className="fixed bottom-4 left-4 bg-gray-800 text-white px-4 py-2 rounded flex items-center gap-4 shadow-lg z-50">
-    <span>Task deleted</span>
-    <button
-      onClick={handleUndo}
-      className="bg-gray-200 text-white px-2 py-1 rounded hover:bg-gray-300"
-    >
-      Undo
-    </button>
-  </div>
-)}
-
     </div>
   );
 };
