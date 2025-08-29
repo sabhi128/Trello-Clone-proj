@@ -1,47 +1,84 @@
 import React, { useState } from "react";
 
-const List = ({ title, initialTasks }) => {
+const List = ({ title = "My Tasks", initialTasks = [] }) => {
   const [tasks, setTasks] = useState(initialTasks);
   const [newTask, setNewTask] = useState("");
 
   const handleAddTask = () => {
-    if (newTask.trim() === "") return;
-    setTasks([...tasks, newTask]);
+    const value = newTask.trim();
+    if (!value) return;
+    setTasks((prev) => [...prev, value]);
     setNewTask("");
   };
 
+  const handleDeleteTask = (index) => {
+    setTasks((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleAddTask();
+  };
+
   return (
-    <div className="bg-white/90 rounded-xl shadow-lg p-4 w-72 max-h-[500px] flex flex-col transition duration-300 hover:scale-105 hover:shadow-2xl">
-      {/* Title */}
-      <h2 className="text-xl font-bold mb-3 text-gray-800">{title}</h2>
+    <div className="relative group w-80">
+      {/* subtle gradient border glow */}
+      <div className="pointer-events-none absolute -inset-0.5 rounded-2xl bg-gradient-to-br from-blue-500/40 via-fuchsia-500/40 to-emerald-500/40 blur opacity-60 transition group-hover:opacity-100" />
+      
+      <div className="relative bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-gray-100 p-5 max-h-[520px] flex flex-col">
+        {/* Title */}
+        <h2 className="text-lg font-semibold tracking-tight text-gray-900 mb-4">
+          {title}
+        </h2>
 
-      {/* Task List with scroll */}
-      <ul className="space-y-2 overflow-y-auto pr-2 flex-1">
-        {tasks.map((task, index) => (
-          <li
-            key={index}
-            className="bg-gray-600 p-2 rounded-lg shadow-sm hover:bg-blue-300 transition duration-200"
+        {/* Task List */}
+        <ul className="space-y-2 overflow-y-auto pr-1 flex-1">
+          {tasks.length === 0 ? (
+            <li className="text-sm text-gray-500 py-8 text-center select-none">
+              No tasks yet — add one below ✨
+            </li>
+          ) : (
+            tasks.map((task, index) => (
+              <li
+                key={index}
+                className="group/item flex items-center gap-3 bg-white border border-gray-200 rounded-xl p-2.5 shadow-sm hover:shadow-md hover:border-gray-300 transition"
+              >
+                <span className="h-2 w-2 rounded-full bg-blue-500/80 shrink-0" />
+                <span className="text-sm text-gray-800 flex-1 break-words">
+                  {task}
+                </span>
+                <button
+  type="button"
+  onClick={() => handleDeleteTask(index)}
+  className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-500 text-white hover:bg-red-600 hover:scale-105 active:scale-95 transition"
+  aria-label="Delete task"
+  title="Delete"
+>
+  ✕
+</button>
+
+              </li>
+            ))
+          )}
+        </ul>
+
+        {/* Add Task */}
+        <div className="mt-4 flex gap-2">
+          <input
+            type="text"
+            value={newTask}
+            onChange={(e) => setNewTask(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Add a task…"
+            className="flex-1 text-sm bg-white border border-gray-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder:text-gray-400"
+          />
+          <button
+            type="button"
+            onClick={handleAddTask}
+            className="px-4 py-2 rounded-xl text-white text-sm font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-95 shadow-md"
           >
-            {task}
-          </li>
-        ))}
-      </ul>
-
-      {/* Add Task Input */}
-      <div className="mt-3 flex gap-2">
-        <input
-          type="text"
-          value={newTask}
-          onChange={(e) => setNewTask(e.target.value)}
-          placeholder="Add a task..."
-          className="flex-1 p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-200 text-black"
-        />
-        <button
-          onClick={handleAddTask}
-          className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition duration-200 active:scale-95"
-        >
-          +
-        </button>
+            Add
+          </button>
+        </div>
       </div>
     </div>
   );
