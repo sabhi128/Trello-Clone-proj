@@ -12,6 +12,8 @@ const List = ({ title, initialTasks, onDelete }) => {
     )
   );
   const [newTask, setNewTask] = useState("");
+  const [newLabel, setNewLabel] = useState("Medium");
+  const [newDueDate, setNewDueDate] = useState("");
 
   // --- DnD: visual highlight when an item is dragged over this list
   const [isOver, setIsOver] = useState(false);
@@ -39,6 +41,16 @@ const List = ({ title, initialTasks, onDelete }) => {
     setTasks(
       tasks.map((t, i) => (i === index ? { text: newText, isEditing: false } : t))
     );
+  };
+
+  // Change label
+  const handleLabelChange = (index, newLabel) => {
+    setTasks(tasks.map((t, i) => (i === index ? { ...t, label: newLabel } : t)));
+  };
+
+  // Change due date
+  const handleDueDateChange = (index, newDate) => {
+    setTasks(tasks.map((t, i) => (i === index ? { ...t, dueDate: newDate } : t)));
   };
 
   // Delete
@@ -126,7 +138,7 @@ const List = ({ title, initialTasks, onDelete }) => {
 
   return (
     <div
-      className={`bg-white/90 rounded-xl shadow-lg p-4 w-72 max-h-[500px] flex flex-col transition duration-300 hover:scale-105 hover:shadow-2xl
+      className={`bg-white/90 rounded-xl shadow-lg p-4 w-74 max-h-[500px] flex flex-col transition duration-300 hover:scale-105 hover:shadow-2xl
         ${isOver ? "ring-2 ring-blue-400" : ""}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -144,68 +156,162 @@ const List = ({ title, initialTasks, onDelete }) => {
               e.dataTransfer.effectAllowed = "move";
               e.dataTransfer.setData(
                 "text/plain",
-                JSON.stringify({ task: { text: task.text }, fromTitle: title, index })
+                JSON.stringify({
+                  task: { text: task.text, label: task.label, dueDate: task.dueDate },
+                  fromTitle: title,
+                  index,
+                })
               );
             }}
-            className={`bg-gray-600 hover:bg-gray-500 p-2 rounded-lg shadow-sm flex justify-between items-center transition duration-200 cursor-move
-              ${task.isEditing ? "bg-gray-300 cursor-default" : ""}
-              ${tasks.some((t) => t.isEditing) && !task.isEditing ? "opacity-50" : ""}`}
+            className={`bg-gray-600 p-2 rounded-lg shadow-sm flex flex-col transition duration-200
+        ${task.isEditing ? "bg-gray-300 cursor-default" : "cursor-move"}
+        ${tasks.some((t) => t.isEditing) && !task.isEditing ? "opacity-50" : ""}`}
           >
-            {task.isEditing ? (
-              <input
-                type="text"
-                value={task.text}
-                autoFocus
-                onFocus={(e) => e.target.select()}
-                onChange={(e) => {
-                  const newText = e.target.value;
-                  setTasks(
-                    tasks.map((t, i) => (i === index ? { ...t, text: newText } : t))
-                  );
+            {/* Priority + Due Date row */}
+            <div className="flex justify-between items-center">
+              {/* Priority dropdown (LEFT) */}
+              <select
+                value={task.label}
+                onChange={(e) => handleLabelChange(index, e.target.value)}
+                disabled={!task.isEditing}
+                className={`text-white text-xs border-none appearance-none focus:outline-none pr-6 w-fit
+            ${task.isEditing
+                    ? "bg-gray-700 cursor-pointer"
+                    : "bg-transparent cursor-default"
+                  }`}
+                style={{
+                  backgroundImage: "url('/dropdown.svg')",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 6px center",
+                  backgroundSize: "12px 12px",
                 }}
-                className="flex-1 p-1 rounded-md text-black border border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400"
-              />
-            ) : (
-              <span>{task.text}</span>
-            )}
+              >
+                <option className="bg-gray-800 text-white" value="High">
+                  Priority: High
+                </option>
+                <option className="bg-gray-800 text-white" value="Medium">
+                  Priority: Medium
+                </option>
+                <option className="bg-gray-800 text-white" value="Low">
+                  Priority: Low
+                </option>
+              </select>
 
-            <div className="flex gap-1">
-              {/* Edit / Save */}
-              <img
-                src={task.isEditing ? "/tick.png" : "/edit.png"}
-                alt={task.isEditing ? "Save" : "Edit"}
-                className="w-5 h-5 cursor-pointer filter invert-0 hover:invert transition"
-                onClick={() =>
-                  task.isEditing ? handleSaveTask(index, task.text) : handleEditTask(index)
-                }
-              />
+              {/* Due Date (RIGHT) */}
+              {task.isEditing ? (
+                <input
+                  type="date"
+                  value={task.dueDate}
+                  onChange={(e) => handleDueDateChange(index, e.target.value)}
+                  className="text-xs p-1 rounded border border-gray-300"
+                />
+              ) : (
+                <span className="text-xs text-gray-200">
+                  {task.dueDate || "No date"}
+                </span>
+              )}
+            </div>
 
-              <img
-                src="/delete.png"
-                alt="Delete"
-                className="w-5 h-5 cursor-pointer filter invert-0 hover:invert transition"
-                onClick={() => handleDeleteTask(index)}
-              />
+            {/* Task text + edit/delete */}
+            <div className="flex justify-between items-center mt-1">
+              {task.isEditing ? (
+                <input
+                  type="text"
+                  value={task.text}
+                  autoFocus
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => {
+                    const newText = e.target.value;
+                    setTasks(
+                      tasks.map((t, i) =>
+                        i === index ? { ...t, text: newText } : t
+                      )
+                    );
+                  }}
+                  className="flex-1 p-1 rounded-md text-black border border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                />
+              ) : (
+                <span>{task.text}</span>
+              )}
+
+              {/* Buttons */}
+              <div className="flex items-center gap-2 ml-2">
+                {/* Edit / Save */}
+                <img
+                  src={task.isEditing ? "/tick.png" : "/edit.png"}
+                  alt={task.isEditing ? "Save" : "Edit"}
+                  className="w-5 h-5 cursor-pointer filter invert-0 hover:invert transition"
+                  onClick={() =>
+                    task.isEditing
+                      ? handleSaveTask(index, task.text)
+                      : handleEditTask(index)
+                  }
+                />
+
+                {/* Delete */}
+                <img
+                  src="/delete.png"
+                  alt="Delete"
+                  className="w-5 h-5 cursor-pointer filter invert-0 hover:invert transition"
+                  onClick={() => handleDeleteTask(index)}
+                />
+              </div>
             </div>
           </li>
         ))}
       </ul>
 
-      <div className="mt-3 flex gap-2">
+
+      {/* New task row */}
+      <div className="mt-3 flex items-center gap-2">
+        {/* Task text input */}
         <input
           type="text"
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
           placeholder="Add a task..."
-          className="flex-1 p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 transition duration-200 text-black"
+          className="flex-1 min-w-0 p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 transition duration-200 text-black"
         />
-        <button
-          onClick={handleAddTask}
-          className="px-3 py-2 rounded-lg hover:bg-gray-200 transition duration-200"
+
+        {/* Priority dropdown */}
+        <select
+          value={newLabel}
+          onChange={(e) => setNewLabel(e.target.value)}
+          className="h-10 w-22 flex-shrink-0 px-2 rounded-lg bg-gray-700 text-white border border-gray-700 text-sm appearance-none pr-6 cursor-pointer"
+          style={{
+            backgroundImage: "url('/dropdown.svg')",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "right 0.5rem center",
+            backgroundSize: "14px",
+          }}
         >
-          +
-        </button>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+
+        {/* Calendar icon (date picker trigger) */}
+        <div className="relative h-10 w-10 bg-gray-700 flex items-center justify-center rounded-lg hover:bg-gray-600 cursor-pointer">
+          <img src="/calendar.png" alt="Calendar" className="w-5 h-5 invert pointer-events-none" />
+
+          {/* Transparent input over the icon */}
+          <input
+            type="date"
+            value={newDueDate}
+            onChange={(e) => setNewDueDate(e.target.value)}
+            className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+          />
+        </div>
       </div>
+
+      {/* Full-width Add button */}
+      <button
+        onClick={handleAddTask}
+        className="mt-2 w-full h-10 flex items-center justify-center rounded-lg bg-gray-700 text-white hover:bg-gray-800 transition"
+      >
+        Add
+      </button>
+
     </div>
   );
 };
