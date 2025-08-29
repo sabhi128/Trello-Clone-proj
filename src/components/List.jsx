@@ -62,7 +62,7 @@ const List = ({ title, initialTasks, onDelete }) => {
         {tasks.map((task, index) => (
           <li
             key={index}
-            className={`bg-gray-600 p-2 rounded-lg shadow-sm flex justify-between items-center transition duration-200
+            className={`bg-gray-600 hover:bg-gray-500 p-2 rounded-lg shadow-sm flex justify-between items-center transition duration-200
               ${task.isEditing ? "bg-gray-300" : ""}
               ${tasks.some((t) => t.isEditing) && !task.isEditing ? "opacity-50" : ""}`}
           >
