@@ -182,7 +182,7 @@ const List = ({ title, initialTasks, onDelete }) => {
                 })
               );
             }}
-            className={`bg-gray-600 p-2 rounded-lg shadow-sm flex flex-col transition duration-200
+            className={`bg-gray-600 hover:bg-gray-500 p-2 rounded-lg shadow-sm flex flex-col transition duration-200
         ${task.isEditing ? "bg-gray-300 cursor-default" : "cursor-move"}
         ${tasks.some((t) => t.isEditing) && !task.isEditing ? "opacity-50" : ""}`}
           >
