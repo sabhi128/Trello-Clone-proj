@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import List from "./components/List";
 import UndoNotify from "./components/UndoNotify";
+import Navbar from "./components/Navbar";
 
 const App = () => {
   const [deletedTask, setDeletedTask] = useState(null);
@@ -30,8 +31,10 @@ const App = () => {
 
   return (
     <>
+          <Navbar />
+
       <div
-        className="h-screen w-screen bg-cover bg-center p-6 flex items-start gap-6"
+        className="h-screen w-screen bg-cover bg-center p-6 flex items-start gap-6 pt-30"
         style={{
           backgroundImage:
             "url('https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?auto=format&fit=crop&w=1350&q=80')",
