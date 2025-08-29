@@ -28,10 +28,21 @@ const List = ({ title, initialTasks, onDelete }) => {
 
   // Add new task
   const handleAddTask = () => {
-    if (newTask.trim() === "") return;
-    setTasks([...tasks, { text: newTask, isEditing: false }]);
+    if (!newTask.trim()) return;
+
+    const newTaskObj = {
+      text: newTask,
+      label: newLabel || "Medium",
+      dueDate: newDueDate || "",
+      isEditing: false,
+    };
+
+    setTasks([...tasks, newTaskObj]);
     setNewTask("");
+    setNewLabel("Medium");
+    setNewDueDate("");
   };
+
 
   // Edit / Save
   const handleEditTask = (index) => {
@@ -39,7 +50,11 @@ const List = ({ title, initialTasks, onDelete }) => {
   };
   const handleSaveTask = (index, newText) => {
     setTasks(
-      tasks.map((t, i) => (i === index ? { text: newText, isEditing: false } : t))
+      tasks.map((t, i) =>
+        i === index
+          ? { ...t, text: newText, isEditing: false } // keep dueDate & label as is
+          : t
+      )
     );
   };
 
@@ -50,8 +65,13 @@ const List = ({ title, initialTasks, onDelete }) => {
 
   // Change due date
   const handleDueDateChange = (index, newDate) => {
-    setTasks(tasks.map((t, i) => (i === index ? { ...t, dueDate: newDate } : t)));
+    setTasks(
+      tasks.map((t, i) =>
+        i === index ? { ...t, dueDate: newDate } : t
+      )
+    );
   };
+
 
   // Delete
   const handleDeleteTask = (index) => {
@@ -201,7 +221,7 @@ const List = ({ title, initialTasks, onDelete }) => {
               {task.isEditing ? (
                 <input
                   type="date"
-                  value={task.dueDate}
+                  value={task.dueDate || ""}
                   onChange={(e) => handleDueDateChange(index, e.target.value)}
                   className="text-xs p-1 rounded border border-gray-300"
                 />
@@ -210,6 +230,7 @@ const List = ({ title, initialTasks, onDelete }) => {
                   {task.dueDate || "No date"}
                 </span>
               )}
+
             </div>
 
             {/* Task text + edit/delete */}
