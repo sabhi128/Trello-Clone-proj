@@ -1,4 +1,3 @@
-// List.jsx
 import React, { useState, useEffect } from "react";
 
 const List = ({ title, initialTasks, onDelete }) => {
