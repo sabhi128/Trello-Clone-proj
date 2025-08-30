@@ -34,7 +34,8 @@ const App = () => {
           <Navbar />
 
       <div
-        className="h-screen w-screen bg-cover bg-center p-6 flex items-start gap-6 pt-30"
+        className="h-screen w-screen bg-cover bg-center p-6 
+             flex flex-col md:flex-row md:overflow-x-auto gap-6 pt-30"
         style={{
           backgroundImage:
             "url('https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?auto=format&fit=crop&w=1350&q=80')",

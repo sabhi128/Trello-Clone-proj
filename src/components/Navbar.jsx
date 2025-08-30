@@ -75,7 +75,7 @@ export default function Navbar() {
 
             {/* Mobile Dropdown */}
             {isOpen && (
-                <div className="md:hidden bg-white shadow-lg px-4 py-2 space-y-2">
+                <div className="md:hidden bg-white/90 backdrop-blur-md shadow-lg px-4 py-2 space-y-2 w-full">
                     <a href="#" className="block text-gray-700 hover:text-blue-600">
                         Home
                     </a>

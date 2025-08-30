@@ -157,7 +157,9 @@ const List = ({ title, initialTasks, onDelete }) => {
 
   return (
     <div
-      className={`bg-white/90 rounded-xl shadow-lg p-4 w-74 max-h-[500px] flex flex-col transition duration-300 hover:scale-105 hover:shadow-2xl
+      className={`bg-white/90 rounded-xl shadow-lg p-4 
+              w-full md:w-72 flex-shrink-0 max-h-[315px] flex flex-col 
+              transition duration-300 hover:scale-105 hover:shadow-2xl
         ${isOver ? "ring-2 ring-blue-400" : ""}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
